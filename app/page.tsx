@@ -530,9 +530,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="text-[12px] text-stone-700 font-medium italic bg-white/40 inline-block px-4 py-2 rounded-full border border-stone-300">
-              *Просимо уникати білого та чорного кольорів
-            </p>
+
           </AnimatedSection>
 
           {/* WISHES */}
