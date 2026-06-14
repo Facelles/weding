@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL("https://victoria-and-oleksand.vercel.app"),
   title: "Вікторія & Олександр — Наше Весілля",
   description: "Запрошення на наше весілля, яке відбудеться 30 серпня 2026 року. Будемо раді розділити цей особливий день з вами!",
   openGraph: {
