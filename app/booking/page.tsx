@@ -1,3 +1,4 @@
+import { Rsvp } from "@prisma/client";
 import { getBookings } from "../../services/getBooking";
 
 export const dynamic = 'force-dynamic';
@@ -5,8 +6,8 @@ export const dynamic = 'force-dynamic';
 export default async function BookingPage() {
   const bookings = await getBookings();
   
-  const attending = bookings.filter((b: any) => b.isAttending);
-  const notAttending = bookings.filter((b: any) => !b.isAttending);
+  const attending = bookings.filter((b: Rsvp) => b.isAttending);
+  const notAttending = bookings.filter((b: Rsvp) => !b.isAttending);
 
   return (
     <div className="min-h-screen bg-[#fbf9f6] text-stone-800 p-8 font-sans">
@@ -28,7 +29,7 @@ export default async function BookingPage() {
               <p className="text-stone-400 italic text-center py-6">Поки немає підтверджень</p>
             ) : (
               <ol className="space-y-5 list-decimal pl-5">
-                {attending.map((guest: any) => (
+                {attending.map((guest: Rsvp) => (
                   <li key={guest.id} className="border-b border-stone-100 pb-4 last:border-0 last:pb-0">
                     <p className="font-medium text-[17px] text-stone-800">{guest.fullName}</p>
                     {guest.wishes && (
@@ -59,7 +60,7 @@ export default async function BookingPage() {
               <p className="text-stone-400 italic text-center py-6">Немає відхилених запрошень</p>
             ) : (
               <ol className="space-y-4 list-decimal pl-5">
-                {notAttending.map((guest) => (
+                {notAttending.map((guest: Rsvp) => (
                   <li key={guest.id} className="border-b border-stone-100 pb-3 last:border-0 last:pb-0">
                     <p className="font-medium text-[16px] text-stone-600">{guest.fullName}</p>
                     {guest.wishes && (
