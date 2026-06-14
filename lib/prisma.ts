@@ -1,6 +1,4 @@
-// @ts-ignore
-import { PrismaClient } from "@prisma/client";
-// @ts-ignore
+import { PrismaClient } from "../prisma/generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const prismaClientSingleton = () => {
