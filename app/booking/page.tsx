@@ -28,7 +28,7 @@ export default async function BookingPage() {
               <p className="text-stone-400 italic text-center py-6">Поки немає підтверджень</p>
             ) : (
               <ol className="space-y-5 list-decimal pl-5">
-                {attending.map((guest) => (
+                {attending.map((guest: any) => (
                   <li key={guest.id} className="border-b border-stone-100 pb-4 last:border-0 last:pb-0">
                     <p className="font-medium text-[17px] text-stone-800">{guest.fullName}</p>
                     {guest.wishes && (
