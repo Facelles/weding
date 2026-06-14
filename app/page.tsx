@@ -251,7 +251,7 @@ const RsvpModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
           <>
             <h2 className="font-serif text-3xl text-[#67854C] mb-2 mt-2">Присутність</h2>
             <p className="text-[13px] text-stone-600 font-light mb-6">
-              Будь ласка, підтвердьте вашу присутність до <span className="font-medium text-[#67854C]">23 липня</span>.
+              Будь ласка, підтвердьте вашу присутність до <span className="font-medium text-[#67854C]">23 серпня</span>.
             </p>
             
             <form className="flex flex-col gap-4 text-left" onSubmit={handleSubmit}>
@@ -300,7 +300,7 @@ function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const targetDate = new Date("2026-07-30T14:00:00").getTime();
+    const targetDate = new Date("2026-08-30T14:00:00").getTime();
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const difference = targetDate - now;
@@ -421,7 +421,7 @@ export default function Home() {
             <div className="flex flex-col items-center gap-2">
               <span className="font-serif text-4xl text-[#4a6133]">30</span>
               <span className="w-1.5 h-1.5 bg-[#b89556] rounded-full" />
-              <span className="font-serif text-4xl text-[#4a6133]">07</span>
+              <span className="font-serif text-4xl text-[#4a6133]">08</span>
               <span className="w-1.5 h-1.5 bg-[#b89556] rounded-full" />
               <span className="font-serif text-4xl text-[#4a6133]">26</span>
             </div>
@@ -440,12 +440,12 @@ export default function Home() {
 
           {/* CALENDAR */}
           <AnimatedSection className="w-full px-6 mb-24 flex flex-col items-center">
-            <h3 className="font-serif text-2xl text-[#67854C] mb-8">Липень, 2026</h3>
+            <h3 className="font-serif text-2xl text-[#67854C] mb-8">Серпень, 2026</h3>
             <div className="grid grid-cols-7 gap-x-3 gap-y-4 text-center w-full max-w-[280px]">
               {['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'НД'].map(day => (
                 <span key={day} className="text-stone-400 text-[11px] mb-2">{day}</span>
               ))}
-              {Array.from({length: 2}).map((_, i) => <span key={`empty-${i}`} />)}
+              {Array.from({length: 5}).map((_, i) => <span key={`empty-${i}`} />)}
               {Array.from({length: 29}).map((_, i) => (
                 <span key={`day-${i}`} className="text-stone-600 text-sm flex items-center justify-center">
                   {i + 1}
