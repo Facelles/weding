@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useTransition } from "react";
 import { Heart, MapPin, Wine, Gem, Utensils, Users, Cake, Sparkles } from "lucide-react";
+import { submitRsvp } from "./actions/rsvp";
 
 // --- Animated Section Wrapper ---
 function AnimatedSection({ children, className = "", delay = 0 }: { children: React.ReactNode, className?: string, delay?: number }) {
@@ -79,13 +80,15 @@ function AnimatedTimelineItem({ children, index, className = "" }: { children: R
 }
 
 // --- Envelope Intro Component ---
-const EnvelopeIntro = ({ onOpenComplete }: { onOpenComplete: () => void }) => {
+const EnvelopeIntro = ({ onOpenComplete, onStartOpen }: { onOpenComplete: () => void, onStartOpen: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHiding, setIsHiding] = useState(false);
 
   const handleOpen = () => {
     setIsOpen(true);
-    // Wait for envelope animation to finish, then fade out the whole overlay
+    onStartOpen();
+    
+    // Починаємо ховати конверт через 1 секунду після початку анімації відкриття
     setTimeout(() => {
       setIsHiding(true);
       setTimeout(onOpenComplete, 1000);
@@ -183,6 +186,9 @@ const EnvelopeIntro = ({ onOpenComplete }: { onOpenComplete: () => void }) => {
 // --- RSVP Modal Component ---
 const RsvpModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [status, setStatus] = useState<"yes" | "no" | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -197,6 +203,32 @@ const RsvpModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
 
   if (!isOpen) return null;
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!status) {
+      setErrorMsg("Будь ласка, оберіть чи зможете ви бути присутніми.");
+      return;
+    }
+    setErrorMsg("");
+    
+    const formData = new FormData(e.currentTarget);
+    formData.append("isAttending", status);
+
+    startTransition(async () => {
+      const result = await submitRsvp(formData);
+      if (result?.error) {
+        setErrorMsg(result.error);
+      } else {
+        setIsSuccess(true);
+        setTimeout(() => {
+          onClose();
+          setIsSuccess(false);
+          setStatus(null);
+        }, 3000);
+      }
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md transition-opacity animate-in fade-in duration-300" onClick={onClose}>
       <div 
@@ -207,37 +239,57 @@ const RsvpModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
 
-        <h2 className="font-serif text-3xl text-[#67854C] mb-2 mt-2">Присутність</h2>
-        <p className="text-[13px] text-stone-600 font-light mb-6">
-          Будь ласка, підтвердьте вашу присутність до <span className="font-medium text-[#67854C]">1 серпня</span>.
-        </p>
-        
-        <form className="flex flex-col gap-4 text-left" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
-          <input type="text" placeholder="Ваше Ім'я та Прізвище" className="w-full p-3.5 rounded-xl bg-white/70 text-[14px] border border-stone-200/60 focus:border-[#E0C590] focus:ring-1 focus:ring-[#E0C590] focus:outline-none text-stone-700 placeholder-stone-400 transition-all shadow-inner" required />
-          
-          <div className="flex gap-2">
-            <button 
-              type="button" 
-              onClick={() => setStatus("yes")}
-              className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-all ${status === "yes" ? "bg-[#67854C] text-white shadow-md" : "bg-white/70 text-stone-600 border border-stone-200/60 hover:bg-white"}`}
-            >
-              Прийду
-            </button>
-            <button 
-              type="button" 
-              onClick={() => setStatus("no")}
-              className={`flex-1 py-3 rounded-xl text-[14px] transition-all ${status === "no" ? "bg-stone-500 text-white shadow-md" : "bg-white/70 text-stone-600 border border-stone-200/60 hover:bg-white"}`}
-            >
-              Не зможу
-            </button>
+        {isSuccess ? (
+          <div className="py-10 animate-in fade-in zoom-in duration-500">
+            <div className="w-16 h-16 bg-[#67854C] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h2 className="font-serif text-2xl text-[#67854C] mb-2 mt-2">Дякуємо!</h2>
+            <p className="text-[14px] text-stone-600 font-light">Ваша відповідь успішно збережена.</p>
           </div>
-          
-          <textarea placeholder="Особливі побажання (меню, алкоголь тощо)" rows={3} className="w-full p-3.5 rounded-xl bg-white/70 text-[14px] border border-stone-200/60 focus:border-[#E0C590] focus:ring-1 focus:ring-[#E0C590] focus:outline-none text-stone-700 placeholder-stone-400 resize-none transition-all shadow-inner" />
-          
-          <button type="submit" className="w-full py-4 rounded-xl bg-[#E0C590] text-[#67854C] font-serif text-lg shadow-md mt-2 transition-transform hover:scale-[1.02] active:scale-[0.98]">
-            Відправити
-          </button>
-        </form>
+        ) : (
+          <>
+            <h2 className="font-serif text-3xl text-[#67854C] mb-2 mt-2">Присутність</h2>
+            <p className="text-[13px] text-stone-600 font-light mb-6">
+              Будь ласка, підтвердьте вашу присутність до <span className="font-medium text-[#67854C]">23 липня</span>.
+            </p>
+            
+            <form className="flex flex-col gap-4 text-left" onSubmit={handleSubmit}>
+              <input type="text" name="fullName" placeholder="Ваше Ім'я та Прізвище" className="w-full p-3.5 rounded-xl bg-white/70 text-[14px] border border-stone-200/60 focus:border-[#E0C590] focus:ring-1 focus:ring-[#E0C590] focus:outline-none text-stone-700 placeholder-stone-400 transition-all shadow-inner" required disabled={isPending} />
+              
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  disabled={isPending}
+                  onClick={() => setStatus("yes")}
+                  className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-all ${status === "yes" ? "bg-[#67854C] text-white shadow-md" : "bg-white/70 text-stone-600 border border-stone-200/60 hover:bg-white"}`}
+                >
+                  Прийду
+                </button>
+                <button 
+                  type="button" 
+                  disabled={isPending}
+                  onClick={() => setStatus("no")}
+                  className={`flex-1 py-3 rounded-xl text-[14px] transition-all ${status === "no" ? "bg-stone-500 text-white shadow-md" : "bg-white/70 text-stone-600 border border-stone-200/60 hover:bg-white"}`}
+                >
+                  Не зможу
+                </button>
+              </div>
+              
+              <textarea name="wishes" placeholder="Особливі побажання (меню, алкоголь тощо)" rows={3} disabled={isPending} className="w-full p-3.5 rounded-xl bg-white/70 text-[14px] border border-stone-200/60 focus:border-[#E0C590] focus:ring-1 focus:ring-[#E0C590] focus:outline-none text-stone-700 placeholder-stone-400 resize-none transition-all shadow-inner" />
+              
+              {errorMsg && <p className="text-red-500 text-sm text-center">{errorMsg}</p>}
+              
+              <button type="submit" disabled={isPending} className="w-full flex justify-center items-center py-4 rounded-xl bg-[#E0C590] text-[#67854C] font-serif text-lg shadow-md mt-2 transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100 disabled:cursor-not-allowed">
+                {isPending ? (
+                  <div className="w-6 h-6 border-2 border-[#67854C]/30 border-t-[#67854C] rounded-full animate-spin" />
+                ) : (
+                  "Відправити"
+                )}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
@@ -248,7 +300,7 @@ function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const targetDate = new Date("2026-08-24T14:00:00").getTime();
+    const targetDate = new Date("2026-07-30T14:00:00").getTime();
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const difference = targetDate - now;
@@ -282,19 +334,40 @@ function CountdownTimer() {
 export default function Home() {
   const [introDone, setIntroDone] = useState(false);
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const handleStartAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.5;
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(e => console.log("Audio play failed:", e));
+    }
+  };
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(e => console.log(e));
+    }
+  };
 
   const colors = [
     { name: "Оливковий", hex: "#67854C" },
     { name: "Бежевий", hex: "#E0C590" },
-    { name: "Кавовий", hex: "#a89380" },
-    { name: "Світлий", hex: "#f5f0eb" },
+    { name: "Коричневий", hex: "#693524" },
+    { name: "Блакитний", hex: "#89cff0" },
     { name: "Темний", hex: "#2c2520" }
   ];
 
   return (
     <>
+      <audio ref={audioRef} src="/sting.mp3" loop />
+      
       {/* Envelope Intro overlay */}
-      {!introDone && <EnvelopeIntro onOpenComplete={() => setIntroDone(true)} />}
+      {!introDone && <EnvelopeIntro onOpenComplete={() => setIntroDone(true)} onStartOpen={handleStartAudio} />}
 
       {/* RSVP Modal */}
       <RsvpModal isOpen={isRsvpModalOpen} onClose={() => setIsRsvpModalOpen(false)} />
@@ -322,27 +395,34 @@ export default function Home() {
                 <path d="M1.12402 348.237C1.2079 348.031 1.3382 347.757 1.50977 347.43C1.85146 346.779 2.32973 345.973 2.85938 345.18C8.1568 337.244 11.683 330.366 13.96 322.664C16.2343 314.971 17.2462 306.511 17.5801 295.433C18.1285 277.216 16.8389 261.856 11.752 225.729C7.1094 192.757 5.74414 179.001 5.74414 165.425C5.74421 141.455 11.6565 124.845 24.0303 113.283C28.9166 108.718 32.4319 106.377 39.8789 102.762C41.4766 101.986 43.0421 101.161 44.2813 100.454C44.9002 100.101 45.4466 99.7729 45.8779 99.4914C46.2759 99.2317 46.6693 98.9541 46.9014 98.7053V98.7043L47.8721 97.6623L48.1367 97.3791L48.1523 96.9914L48.5771 86.2287L48.9941 75.6389L50.0537 72.9025C52.259 67.2012 58.3155 62.5479 65.6582 61.1486L70.1318 60.2971L70.5781 60.2111L70.8203 59.8264L75.542 52.3205C81.7311 42.4832 86.4272 36.5239 93.0938 30.0226C99.2175 24.0509 105.239 19.347 111.776 15.4191C135.886 0.932577 166.584 -2.87108 194.192 5.22382C204.866 8.35336 216.521 13.9421 224.84 19.9084C235.65 27.6616 247.812 41.1051 254.744 52.8928L255.398 54.0285C256.007 55.1064 256.666 56.1725 257.24 57.0256C257.527 57.4513 257.798 57.8322 258.035 58.1389C258.253 58.4204 258.499 58.7139 258.729 58.8996C258.968 59.092 259.316 59.2661 259.637 59.4113C259.988 59.5702 260.418 59.7419 260.894 59.9162C261.846 60.2653 263.021 60.6403 264.196 60.9592C268.412 62.1024 271.345 63.3072 273.607 64.9182C275.851 66.5156 277.505 68.5612 279.079 71.5002V71.5012L280.792 74.6994L281.099 84.8098C281.185 87.6643 281.303 90.4493 281.423 92.6379C281.483 93.7315 281.543 94.6807 281.602 95.4172C281.657 96.1255 281.716 96.7049 281.779 97.0109L282.125 98.6779L282.231 99.1926L282.708 99.4142L288.722 102.199C292.799 104.088 295.585 105.555 298.202 107.346C300.821 109.138 303.302 111.275 306.748 114.533L312.542 120.014L314.958 124.656V124.657C320.091 134.527 322.378 142.981 323.317 155.659L323.937 164.018L323.314 176.491C322.598 190.834 321.818 198.519 319.282 216.206C315.65 241.543 313.845 254.808 312.749 264.217L311.632 273.814L311.623 273.888L311.625 273.962L311.96 286.59C312.579 309.897 313.462 317.382 316.734 325.588C319.02 331.321 323.943 340.803 326.848 345.052C327.468 345.96 328.029 346.833 328.432 347.504C328.623 347.823 328.772 348.088 328.873 348.282C328.774 348.471 328.63 348.724 328.445 349.029C328.149 349.519 327.765 350.118 327.335 350.758L326.891 351.409C322.771 357.357 319.957 362.181 317.845 367.446C315.734 372.709 314.343 378.368 313.024 385.968L311.637 393.968L311.619 394.07L311.621 394.171L311.956 408.314C312.517 432.032 313.119 438.352 318.016 472.081C319.286 480.833 320.603 490.049 321.383 495.63L321.962 499.848L322.821 506.355L323.07 526.348L323.317 546.287L322.198 551.365C319.895 561.808 316.623 569.905 311.93 576.392C307.243 582.869 301.095 587.8 292.947 591.848C290.579 593.024 287.853 594.278 286.426 594.862L285.898 595.069L283.669 595.888L283.248 596.042L283.07 596.454L282.298 598.242C281.992 598.95 281.784 599.944 281.647 601.078C281.508 602.234 281.434 603.612 281.432 605.131C281.425 608.664 281.206 612.596 280.864 616C280.519 619.442 280.06 622.235 279.607 623.554L278.799 625.909L275.805 628.77C272.354 632.065 268.823 633.95 263.816 635.14H263.815L260.27 635.983L259.943 636.06L259.724 636.314L258.472 637.753V637.752C257.717 638.619 255.522 641.892 253.596 644.985C238.153 669.777 216.511 685.243 187.309 692.312L185.912 692.642L178.701 694.308L168.1 694.645L157.49 694.982L150.803 693.93C138.629 692.016 130.395 689.427 119.246 684.009C100.705 674.998 87.7351 663.158 75.7764 644.286C74.6834 642.562 73.5594 640.865 72.6279 639.519C72.1625 638.846 71.7417 638.256 71.3945 637.791C71.0628 637.347 70.7576 636.962 70.5361 636.744H70.5352C69.9887 636.207 69.2202 635.803 68.2949 635.472C67.3586 635.136 66.181 634.846 64.7441 634.581C62.2951 634.129 60.5564 633.59 58.9209 632.685C57.2736 631.773 55.6705 630.456 53.5371 628.359L50.4072 625.284L49.709 622.844C49.4785 622.039 49.268 620.555 49.0947 618.249C48.9233 615.968 48.7935 612.954 48.7002 609.134L48.4238 597.866L48.4082 597.23L47.835 596.952L40.4629 593.381C36.3991 591.413 32.0826 589.144 30.8545 588.344C24.5233 584.219 19.7385 579.677 16.0938 574.167C12.4462 568.653 9.90776 562.118 8.13281 553.965C6.07789 544.525 5.5743 538.28 5.91602 526.258C6.31987 512.047 7.58629 500.455 13.3145 458.688C14.5907 449.381 15.9933 438.407 16.4316 434.3L17.2256 426.864L17.2314 426.81V388.242L17.207 388.133L15.8672 381.938C13.3295 370.206 9.36735 360.702 3.51563 352.387C2.79842 351.368 2.15015 350.357 1.68555 349.555C1.45231 349.152 1.27345 348.816 1.15625 348.566C1.12001 348.488 1.09459 348.424 1.07422 348.373C1.08747 348.336 1.10252 348.29 1.12402 348.237Z" stroke="#E0C590" strokeWidth="2.08861"></path>
               </svg>
             </div>
-            
-            <div className="w-12 h-12 rounded-full border border-[#E0C590] flex items-center justify-center mb-8">
-              <div className="w-10 h-10 rounded-full border border-[#E0C590] flex items-center justify-center text-[#67854C] font-serif text-sm">
-                00
+            <button 
+              onClick={toggleAudio}
+              className="w-12 h-12 rounded-full border border-[#E0C590] flex items-center justify-center mb-8 cursor-pointer hover:bg-[#E0C590]/10 transition-colors z-50 relative group"
+              aria-label={isPlaying ? "Зупинити музику" : "Увімкнути музику"}
+            >
+              <div className="w-10 h-10 rounded-full border border-[#E0C590] flex items-center justify-center text-[#4a6133] transition-colors group-hover:text-[#67854C]">
+                {isPlaying ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                )}
               </div>
-            </div>
+            </button>
 
-            <h1 className="font-serif text-[42px] text-[#67854C] tracking-wide leading-none">Вікторія</h1>
-            <p className="font-serif italic text-3xl text-[#E0C590] my-3">&amp;</p>
-            <h1 className="font-serif text-[42px] text-[#67854C] tracking-wide leading-none mb-10">Олександр</h1>
+            <h1 className="font-serif text-[42px] text-[#4a6133] tracking-wide leading-none">Вікторія</h1>
+            <p className="font-serif italic text-3xl text-[#b89556] my-3">&amp;</p>
+            <h1 className="font-serif text-[42px] text-[#4a6133] tracking-wide leading-none mb-10">Олександр</h1>
 
-            <p className="text-[13px] text-stone-600 font-light max-w-[200px] mb-10 leading-relaxed">
+            <p className="text-[14px] text-stone-800 font-medium max-w-[220px] mb-10 leading-relaxed">
               Ми раді поділитися чудовою новиною — ми одружуємося!
             </p>
 
             <div className="flex flex-col items-center gap-2">
-              <span className="font-serif text-4xl text-[#67854C]">24</span>
-              <span className="w-1.5 h-1.5 bg-[#E0C590] rounded-full" />
-              <span className="font-serif text-4xl text-[#67854C]">08</span>
-              <span className="w-1.5 h-1.5 bg-[#E0C590] rounded-full" />
-              <span className="font-serif text-4xl text-[#67854C]">26</span>
+              <span className="font-serif text-4xl text-[#4a6133]">30</span>
+              <span className="w-1.5 h-1.5 bg-[#b89556] rounded-full" />
+              <span className="font-serif text-4xl text-[#4a6133]">07</span>
+              <span className="w-1.5 h-1.5 bg-[#b89556] rounded-full" />
+              <span className="font-serif text-4xl text-[#4a6133]">26</span>
             </div>
           </AnimatedSection>
 
@@ -359,30 +439,22 @@ export default function Home() {
 
           {/* CALENDAR */}
           <AnimatedSection className="w-full px-6 mb-24 flex flex-col items-center">
-            <h3 className="font-serif text-2xl text-[#67854C] mb-8">Серпень, 2026</h3>
+            <h3 className="font-serif text-2xl text-[#67854C] mb-8">Липень, 2026</h3>
             <div className="grid grid-cols-7 gap-x-3 gap-y-4 text-center w-full max-w-[280px]">
               {['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'НД'].map(day => (
                 <span key={day} className="text-stone-400 text-[11px] mb-2">{day}</span>
               ))}
-              {Array.from({length: 5}).map((_, i) => <span key={`empty-${i}`} />)}
-              <span className="text-stone-600 text-sm">1</span>
-              <span className="text-stone-600 text-sm">2</span>
-              {Array.from({length: 21}).map((_, i) => (
+              {Array.from({length: 2}).map((_, i) => <span key={`empty-${i}`} />)}
+              {Array.from({length: 29}).map((_, i) => (
                 <span key={`day-${i}`} className="text-stone-600 text-sm flex items-center justify-center">
-                  {i + 3}
+                  {i + 1}
                 </span>
               ))}
               <div className="relative flex items-center justify-center text-white">
                 <Heart className="absolute w-8 h-8 text-[#E0C590] fill-[#E0C590] z-0" />
-                <span className="relative z-10 text-sm font-medium">24</span>
+                <span className="relative z-10 text-sm font-medium">30</span>
               </div>
-              <span className="text-stone-600 text-sm">25</span>
-              <span className="text-stone-600 text-sm">26</span>
-              <span className="text-stone-600 text-sm">27</span>
-              <span className="text-stone-600 text-sm">28</span>
-              <span className="text-stone-600 text-sm">29</span>
-              <span className="text-stone-600 text-sm">30</span>
-              <span className="text-stone-600 text-sm">31</span>
+              <span className="text-stone-600 text-sm flex items-center justify-center">31</span>
             </div>
             <p className="text-[13px] text-stone-500 font-light mt-6 text-center">
               — день, коли наша любов стане родиною
@@ -454,11 +526,11 @@ export default function Home() {
             <div className="flex justify-center gap-3 mb-8">
               {colors.map((c, i) => (
                 <div key={i} className="relative group">
-                  <div className={`w-10 h-10 rounded-full shadow-inner ${c.hex === '#f5f0eb' ? 'border border-stone-200' : ''}`} style={{backgroundColor: c.hex}} />
+                  <div className="w-10 h-10 rounded-full shadow-inner border border-stone-200/50" style={{backgroundColor: c.hex}} />
                 </div>
               ))}
             </div>
-            <p className="text-[12px] text-stone-500 font-light italic bg-white/40 inline-block px-4 py-2 rounded-full border border-stone-200/50">
+            <p className="text-[12px] text-stone-700 font-medium italic bg-white/40 inline-block px-4 py-2 rounded-full border border-stone-300">
               *Просимо уникати білого та чорного кольорів
             </p>
           </AnimatedSection>
