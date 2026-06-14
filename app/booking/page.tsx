@@ -1,4 +1,10 @@
-import { Rsvp } from "@prisma/client";
+type Rsvp = {
+  id: string;
+  fullName: string;
+  isAttending: boolean;
+  wishes: string | null;
+  createdAt: Date;
+};
 import { getBookings } from "../../services/getBooking";
 
 export const dynamic = 'force-dynamic';
