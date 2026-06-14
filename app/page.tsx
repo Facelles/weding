@@ -359,7 +359,8 @@ export default function Home() {
     { name: "Бежевий", hex: "#E0C590" },
     { name: "Коричневий", hex: "#693524" },
     { name: "Блакитний", hex: "#89cff0" },
-    { name: "Темний", hex: "#2c2520" }
+    { name: "Рожевий", hex: "#E1A6AD" },
+    { name: "Чорний", hex: "#1a1a1a" }
   ];
 
   return (

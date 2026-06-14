@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 export default async function BookingPage() {
   const bookings = await getBookings();
   
-  const attending = bookings.filter(b => b.isAttending);
-  const notAttending = bookings.filter(b => !b.isAttending);
+  const attending = bookings.filter((b: any) => b.isAttending);
+  const notAttending = bookings.filter((b: any) => !b.isAttending);
 
   return (
     <div className="min-h-screen bg-[#fbf9f6] text-stone-800 p-8 font-sans">
