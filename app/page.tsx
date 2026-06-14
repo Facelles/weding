@@ -230,9 +230,9 @@ const RsvpModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md transition-opacity animate-in fade-in duration-300" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-stone-900/60 transition-opacity animate-in fade-in duration-300" onClick={onClose}>
       <div 
-        className="relative w-full max-w-sm glass-panel bg-[#fbf9f6]/95 p-8 rounded-[32px] text-center shadow-2xl animate-in slide-in-from-bottom-8 duration-500" 
+        className="relative w-full max-w-sm bg-[#fbf9f6] p-8 rounded-[32px] text-center shadow-xl animate-in slide-in-from-bottom-8 duration-300" 
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-stone-200/50 text-stone-500 hover:bg-stone-200 transition-colors">
